@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Management System - Airtable Integration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .config-section {
+            background: rgba(255, 255, 255, 0.1);
+            margin: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+        }
+
+        .config-section h3 {
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .config-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 15px;
+            align-items: end;
+        }
+
+        .config-input {
+            padding: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 14px;
+        }
+
+        .config-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .connection-status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .status-connected {
+            background: #4caf50;
+            color: white;
+        }
+
+        .status-disconnected {
+            background: #f44336;
+            color: white;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s ease;
+            border: none;
+            background: none;
+        }
+
+        .tab.active {
+            background: white;
+            color: #4facfe;
+            border-bottom: 3px solid #4facfe;
+        }
+
+        .tab:hover {
+            background: #e9ecef;
+        }
+
+        .tab:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .content {
+            padding: 30px;
+            min-height: 600px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #4facfe;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border: 1px solid #e9ecef;
+        }
+
+        .form-section h3 {
+            color: #495057;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        .form-group input:disabled,
+        .form-group select:disabled,
+        .form-group textarea:disabled {
+            background: #f8f9fa;
+            color: #6c757d;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+            margin-right: 10px;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .table td {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-planned {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .status-in-progress {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .status-completed {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .status-cancelled {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .recurring-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .action-btn {
+            background: none;
+            border: 1px solid #4facfe;
+            color: #4facfe;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-right: 5px;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: #4facfe;
+            color: white;
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #4facfe;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-weight: 600;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #c62828;
+        }
+
+        .success-message {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Job Management System</h1>
+            <p>Airtable-powered customer and job management</p>
+            
+            <div class="config-section">
+                <h3>Airtable Configuration</h3>
+                <div class="config-row">
+                    <input type="password" id="apiToken" class="config-input" placeholder="Personal Access Token">
+                    <input type="text" id="baseId" class="config-input" placeholder="Base ID (starts with app...)">
+                    <button class="btn" onclick="testConnection()">Connect</button>
+                </div>
+                <div id="connectionStatus" class="connection-status status-disconnected">Not Connected</div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('dashboard')" disabled id="dashboardTab">Dashboard</button>
+            <button class="tab" onclick="showTab('customers')" disabled id="customersTab">Customers</button>
+            <button class="tab" onclick="showTab('jobs')" disabled id="jobsTab">Jobs</button>
+            <button class="tab" onclick="showTab('recurring')" disabled id="recurringTab">Recurring Jobs</button>
+        </div>
+
+        <div class="content">
+            <div id="connectionMessage" class="loading">
+                Please configure your Airtable connection above to get started
+            </div>
+
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content hidden">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalCustomers">0</div>
+                        <div class="stat-label">Total Customers</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalJobs">0</div>
+                        <div class="stat-label">Total Jobs</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="completedJobs">0</div>
+                        <div class="stat-label">Completed Jobs</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="recurringJobs">0</div>
+                        <div class="stat-label">Recurring Jobs</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <h3 style="padding: 20px; margin: 0; background: #f8f9fa;">Recent Jobs</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Job Title</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentJobsTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Customers Tab -->
+            <div id="customers" class="tab-content hidden">
+                <div class="form-section">
+                    <h3>Add New Customer</h3>
+                    <form id="customerForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Customer Name *</label>
+                                <input type="text" id="customerName" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" id="customerEmail">
+                            </div>
+                            <div class="form-group">
+                                <label>Phone</label>
+                                <input type="tel" id="customerPhone">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Address</label>
+                                <textarea id="customerAddress" rows="3"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Notes</label>
+                                <textarea id="customerNotes" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn" id="saveCustomerBtn">Add Customer</button>
+                        <button type="button" class="btn" onclick="clearCustomerForm()">Clear</button>
+                    </form>
+                </div>
+
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Address</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customersTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Jobs Tab -->
+            <div id="jobs" class="tab-content hidden">
+                <div class="form-section">
+                    <h3>Add New Job</h3>
+                    <form id="jobForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Customer *</label>
+                                <select id="jobCustomer" required>
+                                    <option value="">Select Customer</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Job Title *</label>
+                                <input type="text" id="jobTitle" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Scheduled Date</label>
+                                <input type="date" id="jobDate">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Status</label>
+                                <select id="jobStatus">
+                                    <option value="Planned">Planned</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="Cancelled">Cancelled</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Estimated Value (£)</label>
+                                <input type="number" id="jobValue" step="0.01" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Duration (hours)</label>
+                                <input type="number" id="jobDuration" step="0.5" min="0">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Description</label>
+                                <textarea id="jobDescription" rows="3"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Notes</label>
+                                <textarea id="jobNotes" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn" id="saveJobBtn">Add Job</button>
+                        <button type="button" class="btn" onclick="clearJobForm()">Clear</button>
+                    </form>
+                </div>
+
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Job Title</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Value</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="jobsTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Recurring Jobs Tab -->
+            <div id="recurring" class="tab-content hidden">
+                <div class="form-section">
+                    <h3>Set Up Recurring Job</h3>
+                    <form id="recurringForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Customer *</label>
+                                <select id="recurringCustomer" required>
+                                    <option value="">Select Customer</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Job Title *</label>
+                                <input type="text" id="recurringTitle" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Frequency *</label>
+                                <select id="recurringFrequency" required>
+                                    <option value="">Select Frequency</option>
+                                    <option value="Weekly">Weekly</option>
+                                    <option value="Bi-weekly">Bi-weekly</option>
+                                    <option value="Monthly">Monthly</option>
+                                    <option value="Quarterly">Quarterly</option>
+                                    <option value="Yearly">Yearly</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Start Date</label>
+                                <input type="date" id="recurringStartDate">
+                            </div>
+                            <div class="form-group">
+                                <label>Estimated Value (£)</label>
+                                <input type="number" id="recurringValue" step="0.01" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Duration (hours)</label>
+                                <input type="number" id="recurringDuration" step="0.5" min="0">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Description</label>
+                                <textarea id="recurringDescription" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn" id="saveRecurringBtn">Create Recurring Job</button>
+                        <button type="button" class="btn" onclick="clearRecurringForm()">Clear</button>
+                    </form>
+                </div>
+
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Job Title</th>
+                                <th>Frequency</th>
+                                <th>Next Due</th>
+                                <th>Value</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recurringTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Airtable configuration
+        let config = {
+            token: '',
+            baseId: '',
+            connected: false
+        };
+
+        // Data storage
+        let customers = [];
+        let jobs = [];
+        let recurringJobs = [];
+        let editingCustomerId = null;
+        let editingJobId = null;
+        let editingRecurringId = null;
+
+        // Airtable API functions
+        async function makeAirtableRequest(method, endpoint, data = null) {
+            const url = `https://api.airtable.com/v0/${config.baseId}/${endpoint}`;
+            
+            const options = {
+                method: method,
+                headers: {
+                    'Authorization': `Bearer ${config.token}`,
+                    'Content-Type': 'application/json'
+                }
+            };
+
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('Airtable API Error:', error);
+                showError(`API Error: ${error.message}`);
+                throw error;
+            }
+        }
+
+        async function testConnection() {
+            const token = document.getElementById('apiToken').value.trim();
+            const baseId = document.getElementById('baseId').value.trim();
+
+            if (!token || !baseId) {
+                showError('Please enter both API token and Base ID');
+                return;
+            }
+
+            try {
+                showLoading('Testing connection...');
+                
+                config.token = token;
+                config.baseId = baseId;
+
+                // Test connection by fetching customers
+                await makeAirtableRequest('GET', 'Customers?maxRecords=1');
+                
+                config.connected = true;
+                updateConnectionStatus(true);
+                enableTabs();
+                hideMessage();
+                saveConfig();
+                
+                // Load initial data
+                await loadAllData();
+                showTab('dashboard');
+                
+                showSuccess('Connected to Airtable successfully!');
+            } catch (error) {
+                config.connected = false;
+                updateConnectionStatus(false);
+                showError('Connection failed. Please check your API token and Base ID.');
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            const status = document.getElementById('connectionStatus');
+            if (connected) {
+                status.textContent = 'Connected';
+                status.className = 'connection-status status-connected';
+            } else {
+                status.textContent = 'Not Connected';
+                status.className = 'connection-status status-disconnected';
+            }
+        }
+
+        function enableTabs() {
+            const tabs = ['dashboardTab', 'customersTab', 'jobsTab', 'recurringTab'];
+            tabs.forEach(tabId => {
+                document.getElementById(tabId).disabled = false;
+            });
+        }
+
+        function showLoading(message) {
+            const connectionMessage = document.getElementById('connectionMessage');
+            connectionMessage.innerHTML = message;
+            connectionMessage.classList.remove('hidden');
+            connectionMessage.classList.add('loading');
+        }
+
+        function hideMessage() {
+            document.getElementById('connectionMessage').classList.add('hidden');
+        }
+
+        function showError(message) {
+            hideMessage();
+            const existing = document.querySelector('.error-message');
+            if (existing) existing.remove();
+            
+            const error = document.createElement('div');
+            error.className = 'error-message';
+            error.textContent = message;
+            document.querySelector('.content').prepend(error);
+            
+            setTimeout(() => error.remove(), 5000);
+        }
+
+        function showSuccess(message) {
+            const existing = document.querySelector('.success-message');
+            if (existing) existing.remove();
+            
+            const success = document.createElement('div');
+            success.className = 'success-message';
+            success.textContent = message;
+            document.querySelector('.content').prepend(success);
+            
+            setTimeout(() => success.remove(), 3000);
+        }
+
+        // Data loading functions
+        async function loadAllData() {
+            try {
+                await Promise.all([
+                    loadCustomers(),
+                    loadJobs(),
+                    loadRecurringJobs()
+                ]);
+                updateDashboard();
+                updateCustomerDropdowns();
+            } catch (error) {
+                showError('Failed to load data from Airtable');
+            }
+        }
+
+        async function loadCustomers() {
+            try {
+                const response = await makeAirtableRequest('GET', 'Customers');
+                customers = response.records.map(record => ({
+                    id: record.id,
+                    name: record.fields.Name || '',
+                    email: record.fields.Email || '',
+                    phone: record.fields.Phone || '',
+                    address: record.fields.Address || '',
+                    notes: record.fields.Notes || ''
+                }));
+                displayCustomers();
+            } catch (error) {
+                console.error('Failed to load customers:', error);
+            }
+        }
+
+        async function loadJobs() {
+            try {
+                const response = await makeAirtableRequest('GET', 'Jobs');
+                jobs = response.records.map(record => ({
+                    id: record.id,
+                    customerId: record.fields.Customer ? record.fields.Customer[0] : null,
+                    title: record.fields.Title || '',
+                    date: record.fields.Date || '',
+                    status: record.fields.Status || 'Planned',
+                    value: record.fields.Value || 0,
+                    duration: record.fields.Duration || 0,
+                    description: record.fields.Description || '',
+                    notes: record.fields.Notes || ''
+                }));
+                displayJobs();
+            } catch (error) {
+                console.error('Failed to load jobs:', error);
+            }
+        }
+
+        async function loadRecurringJobs() {
+            try {
+                const response = await makeAirtableRequest('GET', 'Recurring%20Jobs');
+                recurringJobs = response.records.map(record => ({
+                    id: record.id,
+                    customerId: record.fields.Customer ? record.fields.Customer[0] : null,
+                    title: record.fields.Title || '',
+                    frequency: record.fields.Frequency || '',
+                    startDate: record.fields['Start Date'] || '',
+                    nextDue: record.fields['Next Due'] || '',
+                    value: record.fields.Value || 0,
+                    duration: record.fields.Duration || 0,
+                    description: record.fields.Description || ''
+                }));
+                displayRecurringJobs();
+            } catch (error) {
+                console.error('Failed to load recurring jobs:', error);
+            }
+        }
+
+        // Tab management
+        function showTab(tabName) {
+            if (!config.connected) return;
+            
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.remove('hidden');
+            
+            // Add active class to clicked tab
+            document.querySelector(`#${tabName}Tab`).classList.add('active');
+        }
+
+        // Customer management
+        document.getElementById('customerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const button = document.getElementById('saveCustomerBtn');
+            button.disabled = true;
+            button.textContent = 'Saving...';
+
+            try {
+                const customerData = {
+                    fields: {
+                        'Name': document.getElementById('customerName').value,
+                        'Email': document.getElementById('customerEmail').value,
+                        'Phone': document.getElementById('customerPhone').value,
+                        'Address': document.getElementById('customerAddress').value,
+                        'Notes': document.getElementById('customerNotes').value
+                    }
+                };
+
+                if (editingCustomerId) {
+                    await makeAirtableRequest('PATCH', `Customers/${editingCustomerId}`, customerData);
+                    showSuccess('Customer updated successfully!');
+                } else {
+                    await makeAirtableRequest('POST', 'Customers', customerData);
+                    showSuccess('Customer added successfully!');
+                }
+
+                clearCustomerForm();
+                await loadCustomers();
+                updateCustomerDropdowns();
+                updateDashboard();
+            } catch (error) {
+                showError('Failed to save customer');
+            } finally {
+                button.disabled = false;
+                button.textContent = editingCustomerId ? 'Update Customer' : 'Add Customer';
+            }
+        });
+
+        function clearCustomerForm() {
+            document.getElementById('customerForm').reset();
+            editingCustomerId = null;
+            document.getElementById('saveCustomerBtn').textContent = 'Add Customer';
+        }
+
+        async function editCustomer(id) {
+            const customer = customers.find(c => c.id === id);
+            if (customer) {
+                document.getElementById('customerName').value = customer.name;
+                document.getElementById('customerEmail').value = customer.email;
+                document.getElementById('customerPhone').value = customer.phone;
+                document.getElementById('customerAddress').value = customer.address;
+                document.getElementById('customerNotes').value = customer.notes;
+                editingCustomerId = id;
+                document.getElementById('saveCustomerBtn').textContent = 'Update Customer';
+            }
+        }
+
+        async function deleteCustomer(id) {
+            if (confirm('Are you sure you want to delete this customer?')) {
+                try {
+                    await makeAirtableRequest('DELETE', `Customers/${id}`);
+                    showSuccess('Customer deleted successfully!');
+                    await loadCustomers();
+                    updateCustomerDropdowns();
+                    updateDashboard();
+                } catch (error) {
+                    showError('Failed to delete customer');
+                }
+            }
+        }
+
+        function displayCustomers() {
+            const tbody = document.getElementById('customersTable');
+            tbody.innerHTML = '';
+
+            customers.forEach(customer => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${customer.name}</td>
+                    <td>${customer.email || '-'}</td>
+                    <td>${customer.phone || '-'}</td>
+                    <td>${customer.address || '-'}</td>
+                    <td>
+                        <button class="action-btn" onclick="editCustomer('${customer.id}')">Edit</button>
+                        <button class="action-btn btn-danger" onclick="deleteCustomer('${customer.id}')">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Job management
+        document.getElementById('jobForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const button = document.getElementById('saveJobBtn');
+            button.disabled = true;
+            button.textContent = 'Saving...';
+
+            try {
+                const jobData = {
+                    fields: {
+                        'Customer': [document.getElementById('jobCustomer').value],
+                        'Title': document.getElementById('jobTitle').value,
+                        'Date': document.getElementById('jobDate').value || undefined,
+                        'Status': document.getElementById('jobStatus').value,
+                        'Value': parseFloat(document.getElementById('jobValue').value) || 0,
+                        'Duration': parseFloat(document.getElementById('jobDuration').value) || 0,
+                        'Description': document.getElementById('jobDescription').value,
+                        'Notes': document.getElementById('jobNotes').value
+                    }
+                };
+
+                if (editingJobId) {
+                    await makeAirtableRequest('PATCH', `Jobs/${editingJobId}`, jobData);
+                    showSuccess('Job updated successfully!');
+                } else {
+                    await makeAirtableRequest('POST', 'Jobs', jobData);
+                    showSuccess('Job added successfully!');
+                }
+
+                clearJobForm();
+                await loadJobs();
+                updateDashboard();
+            } catch (error) {
+                showError('Failed to save job');
+            } finally {
+                button.disabled = false;
+                button.textContent = editingJobId ? 'Update Job' : 'Add Job';
+            }
+        });
+
+        function clearJobForm() {
+            document.getElementById('jobForm').reset();
+            editingJobId = null;
+            document.getElementById('saveJobBtn').textContent = 'Add Job';
+        }
+
+        async function editJob(id) {
+            const job = jobs.find(j => j.id === id);
+            if (job) {
+                document.getElementById('jobCustomer').value = job.customerId;
+                document.getElementById('jobTitle').value = job.title;
+                document.getElementById('jobDate').value = job.date;
+                document.getElementById('jobStatus').value = job.status;
+                document.getElementById('jobValue').value = job.value;
+                document.getElementById('jobDuration').value = job.duration;
+                document.getElementById('jobDescription').value = job.description;
+                document.getElementById('jobNotes').value = job.notes;
+                editingJobId = id;
+                document.getElementById('saveJobBtn').textContent = 'Update Job';
+            }
+        }
+
+        async function deleteJob(id) {
+            if (confirm('Are you sure you want to delete this job?')) {
+                try {
+                    await makeAirtableRequest('DELETE', `Jobs/${id}`);
+                    showSuccess('Job deleted successfully!');
+                    await loadJobs();
+                    updateDashboard();
+                } catch (error) {
+                    showError('Failed to delete job');
+                }
+            }
+        }
+
+        function displayJobs() {
+            const tbody = document.getElementById('jobsTable');
+            tbody.innerHTML = '';
+
+            jobs.forEach(job => {
+                const customer = customers.find(c => c.id === job.customerId);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${customer ? customer.name : 'Unknown'}</td>
+                    <td>${job.title}</td>
+                    <td>${job.date || '-'}</td>
+                    <td><span class="status status-${job.status.toLowerCase().replace(' ', '-')}">${job.status}</span></td>
+                    <td>£${job.value.toFixed(2)}</td>
+                    <td>
+                        <button class="action-btn" onclick="editJob('${job.id}')">Edit</button>
+                        <button class="action-btn btn-danger" onclick="deleteJob('${job.id}')">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Recurring jobs management
+        document.getElementById('recurringForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const button = document.getElementById('saveRecurringBtn');
+            button.disabled = true;
+            button.textContent = 'Saving...';
+
+            try {
+                const startDate = document.getElementById('recurringStartDate').value;
+                const frequency = document.getElementById('recurringFrequency').value;
+                const nextDue = calculateNextDue(startDate, frequency);
+
+                const recurringData = {
+                    fields: {
+                        'Customer': [document.getElementById('recurringCustomer').value],
+                        'Title': document.getElementById('recurringTitle').value,
+                        'Frequency': frequency,
+                        'Start Date': startDate || undefined,
+                        'Next Due': nextDue,
+                        'Value': parseFloat(document.getElementById('recurringValue').value) || 0,
+                        'Duration': parseFloat(document.getElementById('recurringDuration').value) || 0,
+                        'Description': document.getElementById('recurringDescription').value
+                    }
+                };
+
+                if (editingRecurringId) {
+                    await makeAirtableRequest('PATCH', `Recurring%20Jobs/${editingRecurringId}`, recurringData);
+                    showSuccess('Recurring job updated successfully!');
+                } else {
+                    await makeAirtableRequest('POST', 'Recurring%20Jobs', recurringData);
+                    showSuccess('Recurring job created successfully!');
+                }
+
+                clearRecurringForm();
+                await loadRecurringJobs();
+                updateDashboard();
+            } catch (error) {
+                showError('Failed to save recurring job');
+            } finally {
+                button.disabled = false;
+                button.textContent = editingRecurringId ? 'Update Recurring Job' : 'Create Recurring Job';
+            }
+        });
+
+        function clearRecurringForm() {
+            document.getElementById('recurringForm').reset();
+            editingRecurringId = null;
+            document.getElementById('saveRecurringBtn').textContent = 'Create Recurring Job';
+        }
+
+        function calculateNextDue(startDate, frequency) {
+            if (!startDate) return '';
+            
+            const start = new Date(startDate);
+            const today = new Date();
+            let nextDue = new Date(start);
+
+            while (nextDue <= today) {
+                switch (frequency) {
+                    case 'Weekly':
+                        nextDue.setDate(nextDue.getDate() + 7);
+                        break;
+                    case 'Bi-weekly':
+                        nextDue.setDate(nextDue.getDate() + 14);
+                        break;
+                    case 'Monthly':
+                        nextDue.setMonth(nextDue.getMonth() + 1);
+                        break;
+                    case 'Quarterly':
+                        nextDue.setMonth(nextDue.getMonth() + 3);
+                        break;
+                    case 'Yearly':
+                        nextDue.setFullYear(nextDue.getFullYear() + 1);
+                        break;
+                }
+            }
+
+            return nextDue.toISOString().split('T')[0];
+        }
+
+        async function generateRecurringJob(recurringId) {
+            const recurring = recurringJobs.find(r => r.id === recurringId);
+            if (!recurring) return;
+
+            try {
+                const newJobData = {
+                    fields: {
+                        'Customer': [recurring.customerId],
+                        'Title': recurring.title,
+                        'Date': recurring.nextDue,
+                        'Status': 'Planned',
+                        'Value': recurring.value,
+                        'Duration': recurring.duration,
+                        'Description': recurring.description,
+                        'Notes': 'Generated from recurring job'
+                    }
+                };
+
+                await makeAirtableRequest('POST', 'Jobs', newJobData);
+
+                // Update next due date
+                const newNextDue = calculateNextDue(recurring.nextDue, recurring.frequency);
+                const updateData = {
+                    fields: {
+                        'Next Due': newNextDue
+                    }
+                };
+
+                await makeAirtableRequest('PATCH', `Recurring%20Jobs/${recurringId}`, updateData);
+
+                showSuccess('Job generated successfully!');
+                await loadJobs();
+                await loadRecurringJobs();
+                updateDashboard();
+            } catch (error) {
+                showError('Failed to generate job');
+            }
+        }
+
+        async function deleteRecurringJob(id) {
+            if (confirm('Are you sure you want to delete this recurring job?')) {
+                try {
+                    await makeAirtableRequest('DELETE', `Recurring%20Jobs/${id}`);
+                    showSuccess('Recurring job deleted successfully!');
+                    await loadRecurringJobs();
+                    updateDashboard();
+                } catch (error) {
+                    showError('Failed to delete recurring job');
+                }
+            }
+        }
+
+        function displayRecurringJobs() {
+            const tbody = document.getElementById('recurringTable');
+            tbody.innerHTML = '';
+
+            recurringJobs.forEach(recurring => {
+                const customer = customers.find(c => c.id === recurring.customerId);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${customer ? customer.name : 'Unknown'}</td>
+                    <td>${recurring.title} <span class="recurring-badge">RECURRING</span></td>
+                    <td>${recurring.frequency}</td>
+                    <td>${recurring.nextDue}</td>
+                    <td>£${recurring.value.toFixed(2)}</td>
+                    <td>
+                        <button class="action-btn" onclick="generateRecurringJob('${recurring.id}')">Generate Job</button>
+                        <button class="action-btn btn-danger" onclick="deleteRecurringJob('${recurring.id}')">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Dashboard updates
+        function updateDashboard() {
+            document.getElementById('totalCustomers').textContent = customers.length;
+            document.getElementById('totalJobs').textContent = jobs.length;
+            document.getElementById('completedJobs').textContent = jobs.filter(j => j.status === 'Completed').length;
+            document.getElementById('recurringJobs').textContent = recurringJobs.length;
+
+            // Update recent jobs table
+            const recentJobs = jobs.slice(-5).reverse();
+            const tbody = document.getElementById('recentJobsTable');
+            tbody.innerHTML = '';
+
+            recentJobs.forEach(job => {
+                const customer = customers.find(c => c.id === job.customerId);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${customer ? customer.name : 'Unknown'}</td>
+                    <td>${job.title}</td>
+                    <td>${job.date || '-'}</td>
+                    <td><span class="status status-${job.status.toLowerCase().replace(' ', '-')}">${job.status}</span></td>
+                    <td>£${job.value.toFixed(2)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateCustomerDropdowns() {
+            const selects = [document.getElementById('jobCustomer'), document.getElementById('recurringCustomer')];
+            
+            selects.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">Select Customer</option>';
+                
+                customers.forEach(customer => {
+                    const option = document.createElement('option');
+                    option.value = customer.id;
+                    option.textContent = customer.name;
+                    select.appendChild(option);
+                });
+                
+                select.value = currentValue;
+            });
+        }
+
+        // Load saved config on page load
+        window.addEventListener('load', function() {
+            const savedToken = localStorage.getItem('airtable_token');
+            const savedBaseId = localStorage.getItem('airtable_base_id');
+            
+            if (savedToken && savedBaseId) {
+                document.getElementById('apiToken').value = savedToken;
+                document.getElementById('baseId').value = savedBaseId;
+            }
+        });
+
+    </script>
+</body>
+</html>
+                
