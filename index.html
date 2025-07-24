@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Pro</title>
+    <title>Job Management System - Airtable Integration</title>
     <style>
         * {
             margin: 0;
@@ -697,8 +697,21 @@
                 config.token = token;
                 config.baseId = baseId;
 
-                // Test connection by fetching customers
-                await makeAirtableRequest('GET', 'Customers?maxRecords=1');
+                // Test connection with direct fetch to avoid function dependency
+                const testUrl = `https://api.airtable.com/v0/${baseId}/Customers?maxRecords=1`;
+                const response = await fetch(testUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                await response.json(); // Verify we can parse the response
                 
                 config.connected = true;
                 updateConnectionStatus(true);
@@ -712,6 +725,7 @@
                 
                 showSuccess('Connected to Airtable successfully!');
             } catch (error) {
+                console.error('Connection test error:', error);
                 config.connected = false;
                 updateConnectionStatus(false);
                 showError('Connection failed. Please check your API token and Base ID.');
@@ -1268,4 +1282,3 @@
     </script>
 </body>
 </html>
-                
