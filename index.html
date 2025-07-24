@@ -381,11 +381,14 @@
             <div class="config-section">
                 <h3>Airtable Configuration</h3>
                 <div class="config-row">
-                    <input type="password" id="apiToken" class="config-input" placeholder="Personal Access Token">
-                    <input type="text" id="baseId" class="config-input" placeholder="Base ID (starts with app...)">
-                    <button class="btn" onclick="testConnection()">Connect</button>
+                    <input type="password" id="apiToken" class="config-input" placeholder="Personal Access Token" onchange="autoConnect()">
+                    <input type="text" id="baseId" class="config-input" placeholder="Base ID (starts with app...)" onchange="autoConnect()">
+                    <button class="btn" onclick="manualConnect()">Connect</button>
                 </div>
                 <div id="connectionStatus" class="connection-status status-disconnected">Not Connected</div>
+                <p style="color: rgba(255,255,255,0.8); font-size: 12px; margin-top: 10px;">
+                    Tip: The system will auto-connect when you enter both values
+                </p>
             </div>
         </div>
 
@@ -682,7 +685,18 @@
             }
         }
 
-        async function testConnection() {
+        // Auto-connect when both fields are filled
+        async function autoConnect() {
+            const token = document.getElementById('apiToken').value.trim();
+            const baseId = document.getElementById('baseId').value.trim();
+
+            if (token && baseId && token.length > 10 && baseId.startsWith('app')) {
+                await connectToAirtable(token, baseId);
+            }
+        }
+
+        // Manual connect button
+        async function manualConnect() {
             const token = document.getElementById('apiToken').value.trim();
             const baseId = document.getElementById('baseId').value.trim();
 
@@ -691,29 +705,18 @@
                 return;
             }
 
+            await connectToAirtable(token, baseId);
+        }
+
+        // Main connection function
+        async function connectToAirtable(token, baseId) {
             try {
-                showLoading('Testing connection...');
+                showLoading('Connecting...');
                 
                 config.token = token;
                 config.baseId = baseId;
-
-                // Test connection with direct fetch to avoid function dependency
-                const testUrl = `https://api.airtable.com/v0/${baseId}/Customers?maxRecords=1`;
-                const response = await fetch(testUrl, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                await response.json(); // Verify we can parse the response
-                
                 config.connected = true;
+
                 updateConnectionStatus(true);
                 enableTabs();
                 hideMessage();
@@ -722,14 +725,19 @@
                 // Load initial data
                 await loadAllData();
                 showTab('dashboard');
+                showSuccess('Connected successfully!');
                 
-                showSuccess('Connected to Airtable successfully!');
             } catch (error) {
-                console.error('Connection test error:', error);
+                console.error('Connection error:', error);
                 config.connected = false;
                 updateConnectionStatus(false);
-                showError('Connection failed. Please check your API token and Base ID.');
+                showError('Failed to load data. Check your credentials and try again.');
             }
+        }
+
+        async function testConnection() {
+            // Legacy function - redirect to manual connect
+            await manualConnect();
         }
 
         function updateConnectionStatus(connected) {
